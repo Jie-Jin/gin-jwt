@@ -110,6 +110,9 @@ var (
 	// ErrMissingLoginValues indicates a user tried to authenticate without username or password
 	ErrMissingLoginValues = errors.New("missing Username or Password")
 
+	// ErrMissingLoginValues indicates a user tried to authenticate without username or password
+	ErrOrganizationCategoryId = errors.New("wrong organization category id")
+
 	// ErrFailedAuthentication indicates authentication failed, could be faulty username or password
 	ErrFailedAuthentication = errors.New("incorrect Username or Password")
 
@@ -149,8 +152,9 @@ var (
 
 // Login form structure.
 type Login struct {
-	Username string `form:"username" json:"username" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
+	Username               string `form:"username" json:"username" binding:"required"`
+	OrganizationCategoryId int    `form:"organization_category_id" json:"organization_category_id" binding:"required"`
+	Password               string `form:"password" json:"password" binding:"required"`
 }
 
 func (mw *GinJWTMiddleware) readKeys() error {
@@ -319,6 +323,11 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		return
 	}
 
+	if loginVals.OrganizationCategoryId < 1 || loginVals.OrganizationCategoryId > 7 {
+		mw.unauthorized(c, http.StatusBadRequest, mw.HTTPStatusMessageFunc(ErrOrganizationCategoryId, c))
+		return
+	}
+
 	if mw.Authenticator == nil {
 		mw.unauthorized(c, http.StatusInternalServerError, mw.HTTPStatusMessageFunc(ErrMissingAuthenticatorFunc, c))
 		return
@@ -347,6 +356,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 
 	expire := mw.TimeFunc().Add(mw.Timeout)
 	claims["id"] = userID
+	claims["organization_category_id"] = loginVals.OrganizationCategoryId
 	claims["exp"] = expire.Unix()
 	claims["orig_iat"] = mw.TimeFunc().Unix()
 	tokenString, err := mw.signedString(token)
