@@ -108,7 +108,7 @@ var (
 	ErrMissingAuthenticatorFunc = errors.New("ginJWTMiddleware.Authenticator func is undefined")
 
 	// ErrMissingLoginValues indicates a user tried to authenticate without username or password
-	ErrMissingLoginValues = errors.New("missing Username or Password")
+	ErrMissingLoginValues = errors.New("missing username(string), organization_category_id(int) or password(string)")
 
 	// ErrMissingLoginValues indicates a user tried to authenticate without username or password
 	ErrOrganizationCategoryId = errors.New("wrong organization category id")
