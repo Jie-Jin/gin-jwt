@@ -42,7 +42,7 @@ type GinJWTMiddleware struct {
 	// Callback function that should perform the authentication of the user based on userID and
 	// password. Must return true on success, false on failure. Required.
 	// Option return user id, if so, user id will be stored in Claim Array.
-	Authenticator func(userID string, password string, organizationCategoryId int, mysqlsvcIface *mysqlsvc.ServiceIface, c *gin.Context) (string, bool)
+	Authenticator func(userID string, password string, organizationCategoryId int, mysqlsvcIface mysqlsvc.ServiceIface, c *gin.Context) (string, bool)
 
 	// Callback function that should perform the authorization of the authenticated user. Called
 	// only after an authentication success. Must return true on success, false on failure.
@@ -94,7 +94,7 @@ type GinJWTMiddleware struct {
 	// Public key
 	pubKey *rsa.PublicKey
 
-	MysqlSvcIface *mysqlsvc.ServiceIface
+	MysqlSvcIface mysqlsvc.ServiceIface
 }
 
 var (
