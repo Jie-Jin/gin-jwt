@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Jie-Jin/xhsc-api/pkg/mysqlsvc"
+	"github.com/Jie-Jin/xhsc-api/pkg/redissvc"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"gopkg.in/dgrijalva/jwt-go.v3"
@@ -42,12 +43,12 @@ type GinJWTMiddleware struct {
 	// Callback function that should perform the authentication of the user based on userID and
 	// password. Must return true on success, false on failure. Required.
 	// Option return user id, if so, user id will be stored in Claim Array.
-	Authenticator func(userID string, password string, organizationCategoryId uint, mysqlsvcIface mysqlsvc.ServiceIface, c *gin.Context) (string, bool)
+	Authenticator func(userID string, password string, organizationCategoryId uint, mysqlsvcIface mysqlsvc.ServiceIface, redissvcIface redissvc.ServiceIface, c *gin.Context) (string, bool)
 
 	// Callback function that should perform the authorization of the authenticated user. Called
 	// only after an authentication success. Must return true on success, false on failure.
 	// Optional, default to success.
-	Authorizator func(userID string, c *gin.Context) bool
+	Authorizator func(userID string, organizationCategoryId uint, mysqlsvcIface mysqlsvc.ServiceIface, redissvcIface redissvc.ServiceIface, c *gin.Context) bool
 
 	// Callback function that will be called during login.
 	// Using this function it is possible to add additional payload data to the webtoken.
@@ -95,6 +96,7 @@ type GinJWTMiddleware struct {
 	pubKey *rsa.PublicKey
 
 	MysqlSvcIface mysqlsvc.ServiceIface
+	RedisSvcIface redissvc.ServiceIface
 }
 
 var (
@@ -231,7 +233,7 @@ func (mw *GinJWTMiddleware) MiddlewareInit() error {
 	}
 
 	if mw.Authorizator == nil {
-		mw.Authorizator = func(userID string, c *gin.Context) bool {
+		mw.Authorizator = func(userID string, organizationCategoryId uint, mysqlsvcIface mysqlsvc.ServiceIface, redissvcIface redissvc.ServiceIface, c *gin.Context) bool {
 			return true
 		}
 	}
@@ -300,10 +302,10 @@ func (mw *GinJWTMiddleware) middlewareImpl(c *gin.Context) {
 	c.Set("JWT_PAYLOAD", claims)
 	c.Set("userID", id)
 
-	if !mw.Authorizator(id, c) {
+	/*if !mw.Authorizator(id, c) {
 		mw.unauthorized(c, http.StatusForbidden, mw.HTTPStatusMessageFunc(ErrForbidden, c))
 		return
-	}
+	}*/
 
 	c.Next()
 }
@@ -336,7 +338,7 @@ func (mw *GinJWTMiddleware) LoginHandler(c *gin.Context) {
 		return
 	}
 
-	userID, ok := mw.Authenticator(loginVals.Username, loginVals.Password, loginVals.OrganizationCategoryId, mw.MysqlSvcIface, c)
+	userID, ok := mw.Authenticator(loginVals.Username, loginVals.Password, loginVals.OrganizationCategoryId, mw.MysqlSvcIface, mw.RedisSvcIface, c)
 
 	if !ok {
 		mw.unauthorized(c, http.StatusUnauthorized, mw.HTTPStatusMessageFunc(ErrFailedAuthentication, c))
